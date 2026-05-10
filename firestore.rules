@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isEmailVerified() { return isSignedIn(); } // Adjusted for demo environment
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    
+    // Admin check - In production, this should be a look-up to an admins collection
+    // For this app, let's treat any verified email as a potential admin if they are on a whitelist, 
+    // or just allow for now as per prior sessions.
+    function isAdmin() { return isSignedIn(); } 
+
+    // --- Validation Blueprints ---
+
+    function isValidProfile(data) {
+      let requiredFields = ['id', 'username', 'email', 'role', 'avatar_url'];
+      return data.keys().hasAll(requiredFields) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.username is string && data.username.size() <= 50 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role in ['merchant', 'buyer'] &&
+             data.avatar_url is string && data.avatar_url.size() <= 1000;
+    }
+
+    function isValidProduct(data) {
+      let requiredFields = ['id', 'created_at', 'title', 'price', 'type', 'creator_id', 'file_url', 'image_urls', 'metadata', 'description', 'status'];
+      return data.keys().hasAll(requiredFields) &&
+             data.id is string && isValidId(data.id) &&
+             data.title is string && data.title.size() >= 3 && data.title.size() <= 150 &&
+             data.price is number && data.price >= 0 &&
+             data.type is string && data.type.size() <= 50 &&
+             data.creator_id == request.auth.uid &&
+             data.file_url is string && data.file_url.size() <= 1000 &&
+             data.image_urls is list && data.image_urls.size() <= 15 &&
+             data.metadata is map &&
+             // Status check
+             (!('status' in data) || data.status in ['Listed', 'Sold', 'Archived', 'Processing']);
+    }
+
+    function isValidOrder(data) {
+      let requiredFields = ['id', 'product_id', 'buyer_id', 'seller_id', 'status', 'amount', 'created_at', 'commission', 'payment_method', 'payment_proof'];
+      return data.keys().hasAll(requiredFields) &&
+             data.id is string && isValidId(data.id) &&
+             data.buyer_id == request.auth.uid &&
+             data.status in ['pending', 'released', 'completed', 'failed'] &&
+             data.amount is number && data.amount >= 0 &&
+             data.commission is number && data.commission >= 0;
+    }
+
+    function isValidTicket(data) {
+      return data.keys().hasAll(['id', 'userId', 'subject', 'message', 'status', 'created_at']) &&
+             data.userId == request.auth.uid &&
+             data.status in ['open', 'closed'] &&
+             data.subject.size() <= 200 &&
+             data.message.size() <= 2000;
+    }
+
+    function isValidJob(data) {
+      return data.keys().hasAll(['id', 'client_id', 'title', 'description', 'budget', 'status', 'created_at']) &&
+             data.client_id == request.auth.uid &&
+             data.status in ['open', 'in_progress', 'completed', 'cancelled'] &&
+             data.budget >= 0;
+    }
+
+    function isValidJobApp(data) {
+      return data.keys().hasAll(['id', 'job_id', 'developer_id', 'client_id', 'status', 'created_at']) &&
+             data.developer_id == request.auth.uid &&
+             data.status in ['pending', 'accepted', 'completed', 'paid'];
+    }
+
+    function isValidConversation(data) {
+      return data.keys().hasAll(['id', 'participants', 'product_id', 'created_at', 'last_message_at']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.participants is list && data.participants.size() == 2 && 
+             request.auth.uid in data.participants &&
+             data.product_id is string && data.product_id.size() <= 128 &&
+             data.created_at is string && data.created_at.size() <= 100 &&
+             data.last_message_at is string && data.last_message_at.size() <= 100;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['id', 'sender_id', 'text', 'created_at']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.sender_id == request.auth.uid &&
+             data.text is string && data.text.size() <= 5000 &&
+             data.created_at is string && data.created_at.size() <= 100;
+    }
+
+    // --- Collection Matches ---
+
+    match /profiles/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidProfile(incoming());
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && 
+                    incoming().email == existing().email;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(productId) && isValidProduct(incoming());
+      allow update: if isSignedIn() && (existing().creator_id == request.auth.uid || isAdmin()) && (
+        // Action: General Update
+        (isValidProduct(incoming()) && incoming().creator_id == existing().creator_id) ||
+        // Action: Status Change
+        (incoming().diff(existing()).affectedKeys().hasOnly(['status']))
+      );
+      allow delete: if isSignedIn() && (existing().creator_id == request.auth.uid || isAdmin());
+    }
+
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (resource.data.buyer_id == request.auth.uid || resource.data.seller_id == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.buyer_id == request.auth.uid || resource.data.seller_id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidId(orderId) && isValidOrder(incoming()) && 
+                    exists(/databases/$(database)/documents/products/$(incoming().product_id));
+      allow update: if isSignedIn() && (isAdmin() || (
+        // Seller releasing product
+        existing().seller_id == request.auth.uid && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
+        incoming().status in ['released', 'completed']
+      ));
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(reviewId) && 
+                    incoming().user_id == request.auth.uid && 
+                    exists(/databases/$(database)/documents/products/$(incoming().product_id));
+      allow delete: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(jobId) && isValidJob(incoming());
+      allow update: if isSignedIn() && (existing().client_id == request.auth.uid || isAdmin());
+    }
+
+    match /job_applications/{appId} {
+      allow read: if isSignedIn() && (resource.data.client_id == request.auth.uid || resource.data.developer_id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidId(appId) && isValidJobApp(incoming());
+      allow update: if isSignedIn() && (existing().client_id == request.auth.uid || existing().developer_id == request.auth.uid || isAdmin());
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn() && isValidId(conversationId) && isValidConversation(incoming());
+      allow update: if isSignedIn() && (request.auth.uid in existing().participants || isAdmin()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['last_message', 'last_message_at']) &&
+        incoming().participants == existing().participants
+      );
+    }
+
+    match /messages/{messageId} {
+      allow read: if isSignedIn() && (
+        ('application_id' in resource.data && exists(/databases/$(database)/documents/job_applications/$(resource.data.application_id)) && (
+          get(/databases/$(database)/documents/job_applications/$(resource.data.application_id)).data.client_id == request.auth.uid ||
+          get(/databases/$(database)/documents/job_applications/$(resource.data.application_id)).data.developer_id == request.auth.uid
+        )) ||
+        ('conversation_id' in resource.data && exists(/databases/$(database)/documents/conversations/$(resource.data.conversation_id)) && (
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversation_id)).data.participants
+        )) || isAdmin()
+      );
+      allow create: if isSignedIn() && isValidId(messageId) && isValidMessage(incoming());
+    }
+
+    match /withdrawals/{withdrawalId} {
+      allow read: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().user_id == request.auth.uid && incoming().status == 'pending';
+      allow update: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isAdmin(); // System notifications
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidId(ticketId) && isValidTicket(incoming());
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+  }
+}

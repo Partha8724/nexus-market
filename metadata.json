@@ -1,0 +1,6 @@
+{
+  "name": "Nexus Market",
+  "description": "The elite marketplace for unified digital asset trading. High-fidelity buy/sell orchestration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["Asset Trading", "Inventory Management", "Secure Transactions"]
+}

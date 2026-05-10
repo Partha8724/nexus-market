@@ -1,0 +1,271 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "avatar_url": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["merchant", "buyer"] },
+        "bio": { "type": "string" },
+        "verification_badge": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "joined_date": { "type": "string" },
+        "subscription_plan": { "type": "string", "enum": ["free", "pro", "premium"] },
+        "product_limit": { "type": "number" },
+        "featured_listings_count": { "type": "number" },
+        "response_time": { "type": "string" },
+        "upi_id": { "type": "string" },
+        "crypto_address": { "type": "string" },
+        "crypto_network": { "type": "string" },
+        "paypal_email": { "type": "string" },
+        "bank_details": { "type": "string" }
+      },
+      "required": ["id", "username", "email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Digital asset for sale",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "type": { "type": "string" },
+        "file_url": { "type": "string" },
+        "thumbnail_url": { "type": "string" },
+        "image_urls": { "type": "array", "items": { "type": "string" } },
+        "video_url": { "type": "string" },
+        "youtube_url": { "type": "string" },
+        "live_demo_url": { "type": "string" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "license_type": { "type": "string" },
+        "update_history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "version": { "type": "string" },
+              "date": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "seller_email": { "type": "string" },
+        "seller_telegram": { "type": "string" },
+        "seller_discord": { "type": "string" },
+        "creator_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["Listed", "Sold", "Archived", "Processing"] },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "version": { "type": "string" },
+            "file_size": { "type": "string" },
+            "sha256": { "type": "string" },
+            "tech_stack": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      },
+      "required": ["id", "created_at", "title", "price", "type", "creator_id"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Purchase record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "product_id": { "type": "string" },
+        "buyer_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+        "amount": { "type": "number" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "product_id", "buyer_id", "status", "amount", "created_at"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Product review",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "product_id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "product_id", "user_id", "rating", "comment", "created_at"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["order", "payment", "payout", "system", "message"] },
+        "read": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "message", "type", "read", "created_at"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Support ticket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "attachment_url": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "closed"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "replies": { 
+          "type": "array", 
+          "items": {
+            "type": "object",
+            "properties": {
+              "senderId": { "type": "string" },
+              "message": { "type": "string" },
+              "created_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "required": ["id", "userId", "subject", "message", "status", "created_at"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "Development job post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "client_id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "budget": { "type": "number" },
+        "category": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in_progress", "completed", "cancelled"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "client_id", "title", "description", "budget", "status", "created_at"]
+    },
+    "JobApplication": {
+      "title": "Job Application",
+      "description": "Developer application for a job",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "job_id": { "type": "string" },
+        "developer_id": { "type": "string" },
+        "client_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "completed", "paid"] },
+        "file_url": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "deliverables": {
+          "type": "object",
+          "properties": {
+            "preview_url": { "type": "string" },
+            "final_files_url": { "type": "string" },
+            "credentials": { "type": "string" }
+          }
+        }
+      },
+      "required": ["id", "job_id", "developer_id", "client_id", "status", "created_at"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Inner-application chat message",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "application_id": { "type": "string" },
+        "conversation_id": { "type": "string" },
+        "sender_id": { "type": "string" },
+        "text": { "type": "string" },
+        "file_url": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "sender_id", "text", "created_at"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Direct message thread",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "last_message": { "type": "string" },
+        "last_message_at": { "type": "string" },
+        "product_id": { "type": "string" },
+        "unread_count": { "type": "object" }
+      },
+      "required": ["id", "participants"]
+    }
+  },
+  "firestore": {
+    "profiles/{profileId}": {
+      "schema": "Profile",
+      "description": "User profiles"
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Products available in the marketplace"
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Transaction records"
+    },
+    "reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "User reviews for products"
+    },
+    "notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications"
+    },
+    "tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Support tickets"
+    },
+    "jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Client job postings"
+    },
+    "job_applications/{applicationId}": {
+      "schema": "JobApplication",
+      "description": "Developer job applications"
+    },
+    "messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat messages (both direct and application-linked)"
+    },
+    "conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Direct message conversations"
+    },
+    "settings/global": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "commission_rate": { "type": "number" },
+          "maintenance_mode": { "type": "boolean" },
+          "subscription_mode": { "type": "boolean" },
+          "commission_mode": { "type": "boolean" },
+          "site_name": { "type": "string" }
+        }
+      },
+      "description": "Global platform settings"
+    }
+  }
+}

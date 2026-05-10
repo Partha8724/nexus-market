@@ -1,0 +1,21 @@
+{
+  "name": "NEXUS Marketplace",
+  "short_name": "NEXUS",
+  "description": "The Elite Digital Asset & Talent Marketplace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=NEXUS&backgroundColor=0a0a0a",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=NEXUS&backgroundColor=0a0a0a",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
