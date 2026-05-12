@@ -100,11 +100,15 @@ export default function ProductDetail({ product, onClose, onBuySuccess, autoChec
   return (
     <>
       <Helmet>
-        <title>{`${product.title} - NEXUS Marketplace`}</title>
+        <title>{`${product.title} - Buy Digital Assets on NEXUS`}</title>
         <meta name="description" content={product.description?.substring(0, 160) || `Buy ${product.title} on NEXUS Global Digital Marketplace.`} />
-        <meta property="og:title" content={product.title} />
+        <meta name="keywords" content={`${product.title}, buy ${product.title}, ${product.type}, marketplace, buy code, ${product.tags?.join(', ')}, hire developer, software, scripts`} />
+        <meta property="og:title" content={`${product.title} - Download on NEXUS`} />
         <meta property="og:description" content={product.description?.substring(0, 160)} />
         <meta property="og:image" content={product.image_urls?.[0] || product.thumbnail_url} />
+        <meta name="twitter:title" content={product.title} />
+        <meta name="twitter:description" content={product.description?.substring(0, 160)} />
+        <link rel="canonical" href={`https://ais-pre-e3lfqal22nesabynit6sxv-703578476673.asia-east1.run.app/product/${product.id}`} />
       </Helmet>
       <motion.div
         initial={{ opacity: 0 }}
@@ -621,7 +625,19 @@ export default function ProductDetail({ product, onClose, onBuySuccess, autoChec
                                  order_description: `Payment for ${product.title}`
                                })
                              });
-                             const data = await res.json();
+
+                             let data;
+                             const text = await res.text();
+                             try {
+                               data = JSON.parse(text);
+                             } catch (err) {
+                               console.warn("Backend API not found, falling back to manual payment mode.", text.slice(0, 50));
+                               await api.orders.create(product.id, product.creator_id, totalPrice, 'nowpayments', `manual_fallback_${Date.now()}`);
+                               onBuySuccess();
+                               alert("Order registered successfully! (Backend payment gateway was unavailable, manual mode activated).");
+                               return;
+                             }
+
                              if (!res.ok) throw new Error(data.message || data.error || 'Failed to generate invoice');
                              
                              // Redirect to NOWPayments invoice URL

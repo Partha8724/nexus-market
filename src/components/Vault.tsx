@@ -55,7 +55,7 @@ export default function Vault() {
 
   const allTransactions = [
     ...completedSales.map(s => ({
-      id: s.id,
+      id: `sale_${s.id}`,
       type: 'sale',
       amount: s.amount - s.commission,
       desc: `Sale: ${s.product?.title || s.product_id}${s.buyer?.username ? ` to ${s.buyer.username}` : ''}`,
@@ -63,7 +63,7 @@ export default function Vault() {
       status: 'completed'
     })),
     ...paidJobs.map(j => ({
-      id: j.id,
+      id: `job_${j.id}`,
       type: 'job',
       amount: (j.job?.budget || 0) * 0.95,
       desc: `Job Payment: ${j.job?.title || 'Gig'}${j.client?.username ? ` from ${j.client.username}` : ''}`,
@@ -71,7 +71,7 @@ export default function Vault() {
       status: 'completed'
     })),
     ...withdrawals.map(w => ({
-      id: w.id,
+      id: `with_${w.id}`,
       type: 'withdrawal',
       amount: -w.amount,
       desc: `Withdrawal via ${w.method}`,

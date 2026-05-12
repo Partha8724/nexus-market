@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+
+Sitemap: https://nexus-market-c2qp1tuhb-partha-duttas-projects-79685986.vercel.app/sitemap.xml

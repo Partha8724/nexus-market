@@ -109,8 +109,9 @@ export default function App() {
   return (
     <HelmetProvider>
       <Helmet>
-        <title>NEXUS - Digital Marketplace</title>
-        <meta name="description" content="NEXUS Global Digital Marketplace. High quality software, assets, and freelance hiring." />
+        <title>NEXUS - Elite Digital Asset Marketplace & Freelance Hub</title>
+        <meta name="description" content="NEXUS Global Digital Marketplace. Buy premium software, SaaS, Python scripts, LLM AI models. Hire top freelance developers, logo designers, programmers, and video editors." />
+        <meta name="keywords" content="hiring, free job programmer, find freelancer job, find programmer hiring, job logo designer, find work, free louncer, freelancer, logo, program, photo editing, video editing, viras tools, python, llm, ai models, scripts, source code, remote jobs, software marketplace" />
       </Helmet>
       <AuthProvider>
         <AppContent />

@@ -338,7 +338,7 @@ export const api = {
 
     async upload(
       product: Partial<Product>, 
-      file: File | Blob, 
+      file: File | Blob | null, 
       screenshots: File[], 
       thumbnail?: File,
       onProgress?: (progress: UploadProgress) => void
@@ -367,30 +367,33 @@ export const api = {
       try {
         console.log('Starting product upload process...');
         
-        // 1. Upload main file
-        const safeTitle = (product.title || 'asset').replace(/[^a-zA-Z0-9]/g, '_');
-        const fileName = (file as File).name || `${safeTitle}_package.zip`;
-        const storageFileName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        const fileRef = ref(storage, `products/files/${user.uid}/${storageFileName}`);
-        
-        const mainUploadTask = uploadBytesResumable(fileRef, file);
-        const fileUrlPromise = new Promise<string>((resolve, reject) => {
-          mainUploadTask.on('state_changed', 
-            (snapshot) => {
-              const p = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
-              progress.mainFile = p;
-              onProgress?.({ ...progress });
-            },
-            (err) => {
-              console.error('Main file upload error:', err);
-              reject(err);
-            },
-            async () => {
-              const url = await getDownloadURL(fileRef);
-              resolve(url);
-            }
-          );
-        });
+        // 1. Upload main file (optional if liveDemoUrl provided, but we handle it here if present)
+        let fileUrlPromise: Promise<string> = Promise.resolve('');
+        if (file) {
+          const safeTitle = (product.title || 'asset').replace(/[^a-zA-Z0-9]/g, '_');
+          const fileName = (file as File).name || `${safeTitle}_package.zip`;
+          const storageFileName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+          const fileRef = ref(storage, `products/files/${user.uid}/${storageFileName}`);
+          
+          const mainUploadTask = uploadBytesResumable(fileRef, file);
+          fileUrlPromise = new Promise<string>((resolve, reject) => {
+            mainUploadTask.on('state_changed', 
+              (snapshot) => {
+                const p = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
+                progress.mainFile = p;
+                onProgress?.({ ...progress });
+              },
+              (err) => {
+                console.error('Main file upload error:', err);
+                reject(err);
+              },
+              async () => {
+                const url = await getDownloadURL(fileRef);
+                resolve(url);
+              }
+            );
+          });
+        }
 
         // 2. Upload thumbnail if exists
         let thumbUrl = '';

@@ -6,6 +6,7 @@ import { FloatingBackground, ZeroGravityWrapper, FloatIn, BackgroundVideo } from
 import Typewriter from './Typewriter';
 import { NeuronBackground } from './NeuronBackground';
 import LegalModal from './LegalModal';
+import { Helmet } from 'react-helmet-async';
 
 export default function Landing({ onAuth }: { onAuth: () => void }) {
   const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'refund' | 'rules' | 'seller' | 'community'>('privacy');
@@ -21,6 +22,11 @@ export default function Landing({ onAuth }: { onAuth: () => void }) {
 
   return (
     <div ref={containerRef} id="landing-root" className="min-h-screen bg-[#000000] text-white font-sans selection:bg-white selection:text-black relative overflow-hidden transition-colors duration-500">
+      <Helmet>
+        <title>NEXUS - Elite Digital Asset Marketplace & Freelance Hiring</title>
+        <meta name="description" content="NEXUS: Built for scaling startups. Buy premium digital assets, software, SaaS, Python scripts, LLM AI models. Find work or hire top freelance developers, logo designers, programmers." />
+        <meta name="keywords" content="hiring, free job programmer, find freelancer job, find programmer hiring, job logo designer, find work, free louncer, freelancer, logo, program, photo editing, video editing, viras tools, python, llm, ai models, scripts, source code, remote jobs, software marketplace" />
+      </Helmet>
       <div className="neon-fog opacity-30" />
       <FloatingBackground />
       <BackgroundVideo />
