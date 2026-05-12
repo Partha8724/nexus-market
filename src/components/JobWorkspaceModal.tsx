@@ -135,6 +135,7 @@ export default function JobWorkspaceModal({
         body: JSON.stringify({
           amount: budget,
           currency: 'usd',
+          order_id: `JOB:${application.client_id}:${application.id}:${Date.now()}`,
           order_description: `Payment for Job ${application.job?.title}`
         })
       });
@@ -144,15 +145,8 @@ export default function JobWorkspaceModal({
       try {
         data = JSON.parse(text);
       } catch (err) {
-        console.error("Payment API Error (Non-JSON):", text);
-        if (res.status === 404) {
-          throw new Error("Payment service endpoint not found (404). Please ensure the backend server is running.");
-        }
-        
-        console.warn("Falling back to manual payment mode due to API error.");
-        processPaymentSuccess(`manual_fallback_${Date.now()}`);
-        alert(`Payment processed! (Demo Mode: Backend gateway skipped).\n\nDetails: ${text.slice(0, 100)}`);
-        return;
+        console.error("Payment API Error:", text);
+        throw new Error("Payment service currently unavailable. Please try again later.");
       }
 
       if (data.error) throw new Error(data.error);
@@ -160,6 +154,7 @@ export default function JobWorkspaceModal({
       if (data.invoice_url) {
         window.open(data.invoice_url, '_blank');
         processPaymentSuccess(`nowpayments:${data.id || data.invoice_id}`);
+        alert("Payment invoice spawned. The job will be marked as paid automatically once transaction confirms.");
       } else {
         throw new Error('No invoice URL returned');
       }

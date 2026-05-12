@@ -281,6 +281,7 @@ export default function Dashboard({ isDark, onToggleDark }: { isDark: boolean, o
           <SubscriptionModal 
             currentPlan={profile?.subscription_plan} 
             apiKey={profile?.nowpayments_api_key}
+            userId={profile?.id}
             onClose={() => setShowSubscription(false)} 
             onSuccess={() => {
               setShowSubscription(false);
@@ -1835,7 +1836,7 @@ function ProfileSettings({ onClose }: { onClose: () => void }) {
   );
 }
 
-function SubscriptionModal({ onClose, currentPlan, onSuccess, apiKey }: { onClose: () => void, currentPlan?: SubscriptionPlan, onSuccess: () => void, apiKey?: string }) {
+function SubscriptionModal({ onClose, currentPlan, onSuccess, apiKey, userId }: { onClose: () => void, currentPlan?: SubscriptionPlan, onSuccess: () => void, apiKey?: string, userId?: string }) {
   const [loading, setLoading] = useState<string | null>(null);
 
   const plans = [
@@ -1889,7 +1890,7 @@ function SubscriptionModal({ onClose, currentPlan, onSuccess, apiKey }: { onClos
             amount: priceVal,
             currency: 'usd',
             apiKey: apiKey,
-            order_id: `sub_${planId}_${Date.now()}`,
+            order_id: `SUB:${userId}:${planId}:${Date.now()}`,
             order_description: `${planData.name} Subscription Upgrade`
           })
         });
@@ -1899,24 +1900,15 @@ function SubscriptionModal({ onClose, currentPlan, onSuccess, apiKey }: { onClos
         try {
           data = JSON.parse(text);
         } catch (err) {
-          console.error("Payment API Error (Non-JSON):", text);
-          // If we are in production or it's a 404, we might show a better message
-          if (res.status === 404) {
-            throw new Error("Payment service endpoint not found (404). Please ensure the backend server is running.");
-          }
-          
-          // Fallback logic for demo purposes
-          console.warn("Falling back to manual subscription mode due to API error.");
-          await api.subscriptions.upgrade(planId);
-          onSuccess();
-          alert(`Notice: Real payment gateway skipped. Your ${planId} plan has been activated in Demo Mode.\n\nDetail: ${text.slice(0, 100)}`);
-          return;
+          console.error("Payment API Error:", text);
+          throw new Error("Payment service unavailable. Detailed info: " + text.slice(0, 50));
         }
 
         if (!res.ok) throw new Error(data.message || data.error || 'Failed to generate invoice');
         
         if (data.invoice_url) {
           window.open(data.invoice_url, '_blank');
+          alert("Payment invoice created. Your subscription will be enabled automatically after blockchain confirmation (usually 2-10 mins).");
         } else {
           throw new Error('No invoice URL returned');
         }

@@ -621,7 +621,7 @@ export default function ProductDetail({ product, onClose, onBuySuccess, autoChec
                                  amount: totalPrice,
                                  currency: 'usd',
                                  apiKey: product.creator.nowpayments_api_key,
-                                 order_id: `prod_${product.id}_${Date.now()}`,
+                                 order_id: `PROD:${user?.uid}:${product.id}:${Date.now()}`,
                                  order_description: `Payment for ${product.title}`
                                })
                              });
@@ -631,11 +631,8 @@ export default function ProductDetail({ product, onClose, onBuySuccess, autoChec
                              try {
                                data = JSON.parse(text);
                              } catch (err) {
-                               console.warn("Backend API not found, falling back to manual payment mode.", text.slice(0, 50));
-                               await api.orders.create(product.id, product.creator_id, totalPrice, 'nowpayments', `manual_fallback_${Date.now()}`);
-                               onBuySuccess();
-                               alert("Order registered successfully! (Backend payment gateway was unavailable, manual mode activated).");
-                               return;
+                               console.error("Payment API Error:", text);
+                               throw new Error("Cryptocurrency gateway unavailable. Please try again later.");
                              }
 
                              if (!res.ok) throw new Error(data.message || data.error || 'Failed to generate invoice');
@@ -643,8 +640,9 @@ export default function ProductDetail({ product, onClose, onBuySuccess, autoChec
                              // Redirect to NOWPayments invoice URL
                              if (data.invoice_url) {
                                window.open(data.invoice_url, '_blank');
-                               // We still want to record the order in our system but status would be pending
+                               // Record the order as pending
                                await api.orders.create(product.id, product.creator_id, totalPrice, 'nowpayments', `invoice:${data.id || data.invoice_id}`);
+                               alert("Redirecting to Crypto Gateway. Your order will be fulfilled automatically upon payment confirmation.");
                                onBuySuccess();
                              } else {
                                throw new Error('No invoice URL returned');
