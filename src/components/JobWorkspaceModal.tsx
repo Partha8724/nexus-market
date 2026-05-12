@@ -144,9 +144,14 @@ export default function JobWorkspaceModal({
       try {
         data = JSON.parse(text);
       } catch (err) {
-        console.warn("Backend API not found, falling back to manual payment mode.", text.slice(0, 50));
+        console.error("Payment API Error (Non-JSON):", text);
+        if (res.status === 404) {
+          throw new Error("Payment service endpoint not found (404). Please ensure the backend server is running.");
+        }
+        
+        console.warn("Falling back to manual payment mode due to API error.");
         processPaymentSuccess(`manual_fallback_${Date.now()}`);
-        alert("Payment processed successfully! (Backend payment gateway was unavailable, manual mode activated).");
+        alert(`Payment processed! (Demo Mode: Backend gateway skipped).\n\nDetails: ${text.slice(0, 100)}`);
         return;
       }
 

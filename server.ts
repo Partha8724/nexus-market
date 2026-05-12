@@ -11,14 +11,17 @@ async function startServer() {
 
   // API Route for creating a NOWPayments invoice
   app.post("/api/create-nowpayments-invoice", async (req, res) => {
+    console.log("Received NOWPayments invoice request:", req.body);
     try {
       const { amount, currency = "usd", order_id, order_description, apiKey } = req.body;
       const finalApiKey = apiKey || process.env.NOWPAYMENTS_API_KEY;
 
       if (!finalApiKey) {
+        console.warn("NOWPayments: No API key provided.");
         return res.status(400).json({ error: "No NOWPayments API key provided." });
       }
 
+      console.log(`Creating invoice for ${amount} ${currency}...`);
       const response = await fetch("https://api.nowpayments.io/v1/invoice", {
         method: "POST",
         headers: {
@@ -36,16 +39,22 @@ async function startServer() {
       });
 
       const data = await response.json();
+      console.log("NOWPayments API response status:", response.status);
       
       if (!response.ok) {
+         console.error("NOWPayments API error:", data);
          throw new Error(data.message || "Failed to create NOWPayments invoice");
       }
 
       res.json(data);
     } catch (error: any) {
       console.error("NOWPayments error:", error);
-      res.status(400).json({ error: error.message });
+      res.status(500).json({ error: error.message || "Internal Server Error" });
     }
+  });
+
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   // Vite middleware for development
@@ -64,7 +73,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

@@ -1899,10 +1899,17 @@ function SubscriptionModal({ onClose, currentPlan, onSuccess, apiKey }: { onClos
         try {
           data = JSON.parse(text);
         } catch (err) {
-          console.warn("Backend API not found, falling back to manual subscription mode.", text.slice(0, 50));
+          console.error("Payment API Error (Non-JSON):", text);
+          // If we are in production or it's a 404, we might show a better message
+          if (res.status === 404) {
+            throw new Error("Payment service endpoint not found (404). Please ensure the backend server is running.");
+          }
+          
+          // Fallback logic for demo purposes
+          console.warn("Falling back to manual subscription mode due to API error.");
           await api.subscriptions.upgrade(planId);
           onSuccess();
-          alert("Subscription registered successfully! (Backend payment gateway was unavailable, manual mode activated).");
+          alert(`Notice: Real payment gateway skipped. Your ${planId} plan has been activated in Demo Mode.\n\nDetail: ${text.slice(0, 100)}`);
           return;
         }
 
